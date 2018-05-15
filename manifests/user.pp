@@ -11,7 +11,7 @@
 #
 define accounts::user(
   $ensure                   = 'present',
-  $shell                    = '/bin/bash',
+  $shell                    = undef,
   $comment                  = $name,
   $home                     = undef,
   $home_mode                = undef,
@@ -35,12 +35,13 @@ define accounts::user(
   $ignore_password_if_empty = false,
   $forward_content           = undef,
   $forward_source            = undef,
+  $attributes                = [],
 ) {
   validate_re($ensure, '^present$|^absent$')
   validate_bool($locked, $managehome, $purge_sshkeys, $ignore_password_if_empty)
   validate_re($shell, '^/')
   validate_string($comment, $password, $group)
-  validate_array($groups, $sshkeys)
+  validate_array($groups, $sshkeys, $attributes)
   validate_re($membership, '^inclusive$|^minimum$')
   if $bashrc_content {
     validate_string($bashrc_content)
@@ -70,7 +71,7 @@ define accounts::user(
     $home_real = $home
   } elsif $name == 'root' {
     $home_real = $::osfamily ? {
-      'Solaris' => '/',
+      /(Solaris|AIX)/ => '/',
       default   => '/root',
     }
   } else {
@@ -96,12 +97,22 @@ define accounts::user(
       'solaris' : {
         $_shell = '/usr/bin/false'
       }
+      'aix': {
+        $_shell = '/bin/false'
+      }
       default : {
         $_shell = '/sbin/nologin'
       }
     }
   } else {
-    $_shell = $shell
+      if $shell {
+        $_shell = $shell
+      } else {
+        $_shell = $::osfamily ? {
+        'AIX' => '/usr/bin/bash',
+        default => '/bin/bash'
+      }
+    }
   }
 
   # Check if user wants to create the group
@@ -137,6 +148,7 @@ define accounts::user(
       purge_ssh_keys => $purge_sshkeys,
       system         => $system,
       forcelocal     => $forcelocal,
+      attributes     => $attributes,
     }
   } else {
     user { $name:
@@ -153,6 +165,7 @@ define accounts::user(
       purge_ssh_keys => $purge_sshkeys,
       system         => $system,
       forcelocal     => $forcelocal,
+      attributes     => $attributes,
     }
   }
 
