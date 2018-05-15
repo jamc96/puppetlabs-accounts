@@ -11,7 +11,7 @@
 #
 define accounts::user(
   $ensure                   = 'present',
-  $shell                    = undef,
+  $shell                    = '/bin/bash',
   $comment                  = $name,
   $home                     = undef,
   $home_mode                = undef,
@@ -105,13 +105,7 @@ define accounts::user(
       }
     }
   } else {
-      if $shell {
-        $_shell = $shell
-      } else {
-        $_shell = $::osfamily ? {
-        'AIX' => '/usr/bin/bash',
-        default => '/bin/bash'
-      }
+      $_shell = $shell
     }
   }
 
